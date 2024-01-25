@@ -14,10 +14,6 @@ public class ReservedSlotsConfig : BasePluginConfig
     [JsonPropertyName("Flag for reserved slots")] public string reservedFlag { get; set; } = "@css/reservation";
     [JsonPropertyName("Reserved slots")] public int reservedSlots { get; set; } = 1;
     [JsonPropertyName("Reserved slots method")] public int reservedSlotsMethod { get; set; } = 0;
-    //0 - Vždycky nechat jeden volný slot (Takže to vždy bude 9/10)
-    //1 - Vždycky nechat počet volných slotů dokud se nenaplní (Takže to bude 6/10 a pak se můžou připojit ještě 4 vip hráči)
-    //2 - VIP hráči se můžou připojit i když to bude 10/10 , ostatní to kickne
-
     [JsonPropertyName("Kick type")] public int kickType { get; set; } = 0;
     [JsonPropertyName("Kick players in spectate")] public bool kickPlayersInSpectate { get; set; } = true;
     [JsonPropertyName("Admin kick immunity")] public string kickImmunity { get; set; } = "@css/generic";
