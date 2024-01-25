@@ -1,2 +1,21 @@
-# CS2-ReservedSlots
- 
+### CS2 Reserved Slots plugin using [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp)
+
+Configuration in
+```configs/plugins/ReservedSlots/ReservedSlots.json```
+
+|   | What it does |
+| ------------- | ------------- |
+| `Flag for reserved slots`  | Reservations flag |
+| `Reserved slots` | How many slots will be reserved if the method is 2 |
+| `Reserved slots method` | `0` - Always leave one slot open. For example, if your maxplayers is set to 10, the server can have a maximum of 9 players. If a 10th player joins with a Reservation flag, it will kick a player based on the Kick type. If the 10th player doesn't have a reservation flag, they will be kicked|
+||`1` - Maintain the number of reserved slots as per the Reservation slots setting, allowing only players with a Reservation flag to connect. For example, if you have maxplayers set to 10 and Reserved slots set to 3, when there are 7/10 players on the server, additional players can only join if they have a Reservation flag. If they don't, they will be kicked|
+||`2` - Players with a Reservation flag will be able to connect even when the server has reached its maximum player limit, and no one will be kicked. For example, if there are already 10/10 players on the server, and a player without a Reservation flag attempts to join, they will be kicked.|
+| `Kick type` | Works only if Reserved slots method is set to 2|
+||`0` - Players will be kicked randomly |
+||`1` -  Players will be kicked highest ping|
+| `Kick players in spectate` | Kick players who are on spectate first? (`true` or `false`) |
+| `Admin kick immunity` | Flag for admins not to be kicked |
+
+### Installation
+1. Download the lastest release https://github.com/NockyCZ/CS2-ReservedSlots/releases
+2. Unzip into your servers `csgo/addons/counterstrikesharp/plugins/ReservedSlots/` dir
