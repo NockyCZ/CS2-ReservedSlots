@@ -1,0 +1,2 @@
+# CS2-ReservedSlots
+ 
