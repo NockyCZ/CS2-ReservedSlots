@@ -188,9 +188,4 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
         Console.WriteLine(text);
         Console.ResetColor();
     }
-
-    internal static CCSGameRules GameRules()
-    {
-        return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
-    }
 }
