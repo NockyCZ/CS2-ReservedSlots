@@ -6,7 +6,7 @@ Configuration in
 |   | What it does |
 | ------------- | ------------- |
 | `Flag for reserved slots`  | Reservation flag |
-| `Reserved slots` | How many slots will be reserved if the method is 2 or 3 |
+| `Reserved slots` | How many slots will be reserved if the reserved slots method is 1 or 2 |
 | `Reserved slots method` | `0` - Always leave one slot open. For example, if your maxplayers is set to 10, the server can have a maximum of 9 players. If a 10th player joins with a Reservation flag, it will kick a player based on the Kick type. If the 10th player doesn't have a reservation flag, they will be kicked |
 ||`1` - Maintain the number of reserved slots as per the Reservation slots setting, allowing only players with a Reservation flag to connect. For example, if you have maxplayers set to 10 and Reserved slots set to 3, when there are 7/10 players on the server, additional players can only join if they have a Reservation flag. If they don't, they will be kicked. If the server is already full and a player with a Reservation flag attempts to join, it will kick a player based on the Kick type |
 ||`2` - It works the same way as in method 2, except players with a Reservation flag are not counted towards the total player count. For example, if there are 7/10 players on the server, and Reserved slots are set to 3. Out of those 7 players, two players have a Reservation flag. The plugin will then consider that there are 5 players on the server, allowing two more players without a Reservation flag to connect. If the server is already full and a player with a Reservation flag attempts to join, it will kick a player based on the  Kick type |
