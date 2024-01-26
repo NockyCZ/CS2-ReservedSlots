@@ -15,6 +15,7 @@ Configuration in
 | `Kick type` | Works only if Reserved slots method is set to 0, 1 or 2|
 ||`0` - Players will be kicked randomly |
 ||`1` -  Players will be kicked by highest ping|
+||`2` -  Players will be kicked by highest score|
 | `Kick players in spectate` | Kick players who are in spectate first? (`true` or `false`) |
 | `Admin kick immunity` | Flag for admins not to be kicked |
 
