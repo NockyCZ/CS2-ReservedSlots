@@ -14,6 +14,7 @@ public class ReservedSlotsConfig : BasePluginConfig
     [JsonPropertyName("Flag for reserved slots")] public string reservedFlag { get; set; } = "@css/reservation";
     [JsonPropertyName("Reserved slots")] public int reservedSlots { get; set; } = 1;
     [JsonPropertyName("Reserved slots method")] public int reservedSlotsMethod { get; set; } = 0;
+    [JsonPropertyName("Leave one slot open")] public bool openSlot { get; set; } = true;
     [JsonPropertyName("Kick type")] public int kickType { get; set; } = 0;
     [JsonPropertyName("Kick players in spectate")] public bool kickPlayersInSpectate { get; set; } = true;
     [JsonPropertyName("Admin kick immunity")] public string kickImmunity { get; set; } = "@css/generic";
@@ -23,12 +24,13 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
 {
     public override string ModuleName => "Reserved Slots";
     public override string ModuleAuthor => "SourceFactory.eu";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
 
     public enum KickType
     {
         Random,
         HighestPing,
+        HighestScore
         //HighestTime,
     }
     public ReservedSlotsConfig Config { get; set; } = null!;
@@ -45,11 +47,11 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
             switch (Config.reservedSlotsMethod)
             {
                 case 1:
-                    if (GetPlayersCount() >= MaxPlayers - Config.reservedSlots)
+                    if (GetPlayersCount() > MaxPlayers - Config.reservedSlots)
                     {
                         if (AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
-                            if (GetPlayersCount() >= MaxPlayers)
+                            if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
                             {
                                 var kickedPlayer = getPlayerToKick(player);
                                 if (kickedPlayer != null)
@@ -67,11 +69,11 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
                     }
                     break;
                 case 2:
-                    if (GetPlayersCount() - GetPlayersCountWithReservationFlag() >= MaxPlayers - Config.reservedSlots)
+                    if (GetPlayersCount() - GetPlayersCountWithReservationFlag() > MaxPlayers - Config.reservedSlots)
                     {
                         if (AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
-                            if (GetPlayersCount() >= MaxPlayers)
+                            if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
                             {
                                 var kickedPlayer = getPlayerToKick(player);
                                 if (kickedPlayer != null)
@@ -131,16 +133,16 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
 
         if (Config.kickPlayersInSpectate)
         {
-            if (Utilities.GetPlayers().Where(p => p.IsValid && !p.IsHLTV && p.Connected == PlayerConnectedState.PlayerConnected && (p.TeamNum != (byte)CsTeam.None || p.TeamNum != (byte)CsTeam.Spectator)).Count() > 0)
+            if (Utilities.GetPlayers().Where(p => p.IsValid && !p.IsHLTV && p != client && p.Connected == PlayerConnectedState.PlayerConnected && (p.TeamNum == (byte)CsTeam.None || p.TeamNum == (byte)CsTeam.Spectator)).Count() > 0)
                 playersList.RemoveAll(p => p.TeamNum != (byte)CsTeam.None || p.TeamNum != (byte)CsTeam.Spectator);
         }
 
         switch (Config.kickType)
         {
             case (int)KickType.HighestPing:
+                CCSPlayerController? playerWithHighestPing = null;
                 if (playersList.Count() > 0)
                 {
-                    CCSPlayerController? playerWithHighestPing = null;
                     int highestPing = 0;
                     foreach (var player in playersList)
                     {
@@ -152,10 +154,26 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
                             playerWithHighestPing = player;
                         }
                     }
-                    return playerWithHighestPing!;
                 }
-                return null!;
+                return playerWithHighestPing!;
 
+            case (int)KickType.HighestScore:
+                CCSPlayerController? playerWithHighestScore = null;
+                if (playersList.Count() > 0)
+                {
+                    int highestScore = -1;
+                    foreach (var player in playersList)
+                    {
+                        var playerScore = player.Score;
+
+                        if (playerScore > highestScore)
+                        {
+                            highestScore = playerScore;
+                            playerWithHighestScore = player;
+                        }
+                    }
+                }
+                return playerWithHighestScore!;
                 //case (int)KickType.HighestTime:
                 //    break;
                 //default:
@@ -187,10 +205,5 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
         Console.ForegroundColor = color;
         Console.WriteLine(text);
         Console.ResetColor();
-    }
-
-    internal static CCSGameRules GameRules()
-    {
-        return Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
     }
 }
