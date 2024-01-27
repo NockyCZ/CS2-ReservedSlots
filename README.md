@@ -17,7 +17,7 @@ Configuration in
 ||`1` -  Players will be kicked by highest ping|
 ||`2` -  Players will be kicked by highest score|
 | `Kick players in spectate` | Kick players who are in spectate first? (`true` or `false`) |
-| `Admin kick immunity` | Flag for admins not to be kicked |
+| `Admin kick immunity` | Flag for admins not to be kicked. Do not use same flag as Reservation flag, players with a reservation flag have automatically kick immunity |
 
 ### Installation
 1. Download the lastest release https://github.com/NockyCZ/CS2-ReservedSlots/releases
