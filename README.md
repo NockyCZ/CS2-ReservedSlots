@@ -16,6 +16,7 @@ Configuration in
 ||`0` - Players will be kicked randomly |
 ||`1` -  Players will be kicked by highest ping|
 ||`2` -  Players will be kicked by highest score|
+||`3` -  Players will be kicked by lowest score|
 | `Kick players in spectate` | Kick players who are in spectate first? (`true` or `false`) |
 | `Admin kick immunity` | Flag for admins not to be kicked. Do not use same flag as Reservation flag, players with a reservation flag have automatically kick immunity |
 
