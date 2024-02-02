@@ -6,7 +6,6 @@ using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json.Serialization;
 
-
 namespace ReservedSlots;
 
 public class ReservedSlotsConfig : BasePluginConfig
@@ -20,17 +19,18 @@ public class ReservedSlotsConfig : BasePluginConfig
     [JsonPropertyName("Admin kick immunity")] public string kickImmunity { get; set; } = "@css/generic";
 }
 
-public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
+public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 {
     public override string ModuleName => "Reserved Slots";
     public override string ModuleAuthor => "SourceFactory.eu";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
 
     public enum KickType
     {
         Random,
         HighestPing,
-        HighestScore
+        HighestScore,
+        LowestScore,
         //HighestTime,
     }
     public ReservedSlotsConfig Config { get; set; } = null!;
@@ -91,7 +91,7 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
                     }
                     break;
                 case 3:
-                    if (GetPlayersCount() >= MaxPlayers)
+                    if (GetPlayersCount() > MaxPlayers)
                     {
                         if (!AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
@@ -116,7 +116,7 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
                         else
                         {
                             SendConsoleMessage($"[Reserved Slots] Player {player.PlayerName} is kicked because server is full! (Method = 0)", ConsoleColor.Red);
-                            Server.ExecuteCommand($"kickid {player.UserId}");
+                            Server.ExecuteCommand($"kick {player.UserId}");
                         }
                     }
                     break;
@@ -127,71 +127,53 @@ public partial class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConf
     }
     private CCSPlayerController getPlayerToKick(CCSPlayerController client)
     {
-        List<CCSPlayerController>? playersList = Utilities.GetPlayers()
+        var allPlayers = Utilities.GetPlayers();
+        var playersList = allPlayers
             .Where(p => p.IsValid && !p.IsHLTV && p.Connected == PlayerConnectedState.PlayerConnected && p != client && !AdminManager.PlayerHasPermissions(p, Config.kickImmunity) && !AdminManager.PlayerHasPermissions(p, Config.reservedFlag))
+            .Select(player => (player, (int)player.Ping, player.Score))
             .ToList();
 
         if (Config.kickPlayersInSpectate)
         {
             if (Utilities.GetPlayers().Where(p => p.IsValid && !p.IsHLTV && p != client && p.Connected == PlayerConnectedState.PlayerConnected && (p.TeamNum == (byte)CsTeam.None || p.TeamNum == (byte)CsTeam.Spectator)).Count() > 0)
-                playersList.RemoveAll(p => p.TeamNum != (byte)CsTeam.None || p.TeamNum != (byte)CsTeam.Spectator);
+                playersList.RemoveAll(p => p.Item1.TeamNum != (byte)CsTeam.None || p.Item1.TeamNum != (byte)CsTeam.Spectator);
         }
-
+        
+        CCSPlayerController player = null!;
         switch (Config.kickType)
         {
             case (int)KickType.HighestPing:
-                CCSPlayerController? playerWithHighestPing = null;
                 if (playersList.Count() > 0)
                 {
-                    int highestPing = 0;
-                    foreach (var player in playersList)
-                    {
-                        var playerPing = (int)player.Ping;
-
-                        if (playerPing > highestPing)
-                        {
-                            highestPing = playerPing;
-                            playerWithHighestPing = player;
-                        }
-                    }
+                    playersList.Sort((x, y) => y.Item2.CompareTo(x.Item2));
+                    player = playersList.FirstOrDefault().Item1;
                 }
-                return playerWithHighestPing!;
+                break;
 
             case (int)KickType.HighestScore:
-                CCSPlayerController? playerWithHighestScore = null;
                 if (playersList.Count() > 0)
                 {
-                    int highestScore = -1;
-                    foreach (var player in playersList)
-                    {
-                        var playerScore = player.Score;
-
-                        if (playerScore > highestScore)
-                        {
-                            highestScore = playerScore;
-                            playerWithHighestScore = player;
-                        }
-                    }
+                    playersList.Sort((x, y) => y.Item3.CompareTo(x.Item3));
+                    player = playersList.FirstOrDefault().Item1;
                 }
-                return playerWithHighestScore!;
-                //case (int)KickType.HighestTime:
-                //    break;
-                //default:
-                //    break;
+                break;
+
+            case (int)KickType.LowestScore:
+                if (playersList.Count() > 0)
+                {
+                    playersList.Sort((x, y) => x.Item3.CompareTo(y.Item3));
+                    player = playersList.FirstOrDefault().Item1;
+                }
+                break;
+
+            default:
+                playersList = playersList.OrderBy(x => Guid.NewGuid()).ToList();
+                player = playersList.FirstOrDefault().Item1;
+                break;
         }
-        if (playersList.Count() > 0)
-        {
-            Random random = new Random();
-            return GetRandomPlayer(playersList, random);
-        }
-        return null!;
+        return player;
     }
 
-    private static T GetRandomPlayer<T>(List<T> list, Random random)
-    {
-        int randomIndex = random.Next(list.Count);
-        return list[randomIndex];
-    }
     private static int GetPlayersCount()
     {
         return Utilities.GetPlayers().Where(p => p.IsValid && !p.IsHLTV && p.Connected == PlayerConnectedState.PlayerConnected).Count();
