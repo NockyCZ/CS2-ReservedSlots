@@ -2,7 +2,6 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
-using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json.Serialization;
 
@@ -23,7 +22,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 {
     public override string ModuleName => "Reserved Slots";
     public override string ModuleAuthor => "SourceFactory.eu";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.3";
 
     public enum KickType
     {
@@ -41,7 +40,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
     {
         var player = @event.Userid;
 
-        int MaxPlayers = NativeAPI.GetCommandParamValue("-maxplayers", DataType.DATA_TYPE_INT, 64);
+        int MaxPlayers = Server.MaxPlayers;
         if (!player.IsHLTV && player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
         {
             switch (Config.reservedSlotsMethod)
@@ -90,7 +89,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                         }
                     }
                     break;
-                case 3:
+                /*case 3:
                     if (GetPlayersCount() > MaxPlayers)
                     {
                         if (!AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
@@ -99,7 +98,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                             Server.ExecuteCommand($"kickid {player.UserId}");
                         }
                     }
-                    break;
+                    break;*/
 
                 default:
                     if (GetPlayersCount() >= MaxPlayers)
@@ -116,7 +115,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                         else
                         {
                             SendConsoleMessage($"[Reserved Slots] Player {player.PlayerName} is kicked because server is full! (Method = 0)", ConsoleColor.Red);
-                            Server.ExecuteCommand($"kick {player.UserId}");
+                            Server.ExecuteCommand($"kickid {player.UserId}");
                         }
                     }
                     break;
