@@ -1,5 +1,8 @@
 ### CS2 Reserved Slots plugin using [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp)
 
+## <img src="https://cdn.discordapp.com/avatars/1195690503094673518/bc09a09dffd31aa168aa60242859ea48.png?size=128" width="30px" height="30px"> [Discord Support Server](https://discord.gg/sourcefactory)
+
+
 Configuration in
 ```configs/plugins/ReservedSlots/ReservedSlots.json```
 
@@ -24,5 +27,5 @@ Configuration in
 | `Kick players in spectate` | Kick players who are in spectate first? (`true` or `false`) |
 
 ### Installation
-1. Download the lastest release https://github.com/NockyCZ/CS2-ReservedSlots/releases
-2. Unzip into your servers `csgo/addons/counterstrikesharp/plugins/ReservedSlots/` dir
+1. Download the lastest release https://github.com/NockyCZ/CS2-ReservedSlots/releases/latest
+2. Unzip into your servers `csgo/addons/counterstrikesharp/plugins/` dir
