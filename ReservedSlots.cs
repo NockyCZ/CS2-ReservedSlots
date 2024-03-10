@@ -10,19 +10,20 @@ namespace ReservedSlots;
 public class ReservedSlotsConfig : BasePluginConfig
 {
     [JsonPropertyName("Flag for reserved slots")] public string reservedFlag { get; set; } = "@css/reservation";
+    [JsonPropertyName("Admin flag for reserved slots")] public string adminFlag { get; set; } = "@css/ban";
+    [JsonPropertyName("Kick immunity type")] public int kickImmunity { get; set; } = 0;
     [JsonPropertyName("Reserved slots")] public int reservedSlots { get; set; } = 1;
     [JsonPropertyName("Reserved slots method")] public int reservedSlotsMethod { get; set; } = 0;
-    [JsonPropertyName("Leave one slot open")] public bool openSlot { get; set; } = true;
+    [JsonPropertyName("Leave one slot open")] public bool openSlot { get; set; } = false;
     [JsonPropertyName("Kick type")] public int kickType { get; set; } = 0;
     [JsonPropertyName("Kick players in spectate")] public bool kickPlayersInSpectate { get; set; } = true;
-    [JsonPropertyName("Admin kick immunity")] public string kickImmunity { get; set; } = "@css/generic";
 }
 
 public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 {
     public override string ModuleName => "Reserved Slots";
     public override string ModuleAuthor => "SourceFactory.eu";
-    public override string ModuleVersion => "1.0.4";
+    public override string ModuleVersion => "1.0.5";
 
     public enum KickType
     {
@@ -40,13 +41,18 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
     {
         var player = @event.Userid;
         int MaxPlayers = Server.MaxPlayers;
-        if (!player.IsHLTV && player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected && player.SteamID.ToString().Length == 17)
+        if (player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected && player.SteamID.ToString().Length == 17)
         {
             switch (Config.reservedSlotsMethod)
             {
                 case 1:
                     if (GetPlayersCount() > MaxPlayers - Config.reservedSlots)
                     {
+                        if (AdminManager.PlayerHasPermissions(player, Config.adminFlag))
+                        {
+                            return HookResult.Continue;
+                        }
+
                         if (AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
                             if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
@@ -56,6 +62,10 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                                 {
                                     SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 1)", ConsoleColor.Red);
                                     Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                                }
+                                else
+                                {
+                                    SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 1)", ConsoleColor.Red);
                                 }
                             }
                         }
@@ -69,6 +79,10 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                 case 2:
                     if (GetPlayersCount() - GetPlayersCountWithReservationFlag() > MaxPlayers - Config.reservedSlots)
                     {
+                        if (AdminManager.PlayerHasPermissions(player, Config.adminFlag))
+                        {
+                            return HookResult.Continue;
+                        }
                         if (AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
                             if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
@@ -78,6 +92,10 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                                 {
                                     SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 2)", ConsoleColor.Red);
                                     Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                                }
+                                else
+                                {
+                                    SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 2)", ConsoleColor.Red);
                                 }
                             }
                         }
@@ -102,6 +120,10 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                 default:
                     if (GetPlayersCount() >= MaxPlayers)
                     {
+                        if (AdminManager.PlayerHasPermissions(player, Config.adminFlag))
+                        {
+                            return HookResult.Continue;
+                        }
                         if (AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
                             var kickedPlayer = getPlayerToKick(player);
@@ -109,6 +131,10 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                             {
                                 SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 0)", ConsoleColor.Red);
                                 Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                            }
+                            else
+                            {
+                                SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 0)", ConsoleColor.Red);
                             }
                         }
                         else
@@ -127,9 +153,22 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
     {
         var allPlayers = Utilities.GetPlayers();
         var playersList = allPlayers
-            .Where(p => p.IsValid && !p.IsHLTV && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17 && p != client && !AdminManager.PlayerHasPermissions(p, Config.kickImmunity) && !AdminManager.PlayerHasPermissions(p, Config.reservedFlag))
+            .Where(p => p.IsValid && !p.IsHLTV && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17 && p != client)
             .Select(player => (player, (int)player.Ping, player.Score))
             .ToList();
+
+        switch (Config.kickImmunity)
+        {
+            case 1:
+                playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag));
+                break;
+            case 2:
+                playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
+                break;
+            default:
+                playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag) || AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
+                break;
+        }
 
         if (Config.kickPlayersInSpectate)
         {
