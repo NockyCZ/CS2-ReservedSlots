@@ -15,6 +15,7 @@ public class ReservedSlotsConfig : BasePluginConfig
     [JsonPropertyName("Reserved slots")] public int reservedSlots { get; set; } = 1;
     [JsonPropertyName("Reserved slots method")] public int reservedSlotsMethod { get; set; } = 0;
     [JsonPropertyName("Leave one slot open")] public bool openSlot { get; set; } = false;
+    [JsonPropertyName("Kick Check Method")] public int kickCheckMethod { get; set; } = 0;
     [JsonPropertyName("Kick type")] public int kickType { get; set; } = 0;
     [JsonPropertyName("Kick players in spectate")] public bool kickPlayersInSpectate { get; set; } = true;
 }
@@ -23,7 +24,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 {
     public override string ModuleName => "Reserved Slots";
     public override string ModuleAuthor => "SourceFactory.eu";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.6";
 
     public enum KickType
     {
@@ -33,9 +34,40 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
         LowestScore,
         //HighestTime,
     }
+    public List<CCSPlayerController> waitingForSelectTeam = new List<CCSPlayerController>();
     public ReservedSlotsConfig Config { get; set; } = null!;
     public void OnConfigParsed(ReservedSlotsConfig config) { Config = config; }
 
+    [GameEventHandler(HookMode.Pre)]
+    public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player != null && player.IsValid && waitingForSelectTeam.Contains(player))
+        {
+            waitingForSelectTeam.Remove(player);
+            var kickedPlayer = getPlayerToKick(player);
+            if (kickedPlayer != null)
+            {
+                SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 3)", ConsoleColor.Red);
+                Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+            }
+            else
+            {
+                SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 3)", ConsoleColor.Red);
+            }
+        }
+        return HookResult.Continue;
+    }
+
+    [GameEventHandler(HookMode.Pre)]
+    public HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player != null && player.IsValid && waitingForSelectTeam.Contains(player))
+            waitingForSelectTeam.Remove(player);
+
+        return HookResult.Continue;
+    }
     [GameEventHandler(HookMode.Pre)]
     public HookResult OnPlayerConnect(EventPlayerConnectFull @event, GameEventInfo info)
     {
@@ -48,7 +80,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                 case 1:
                     if (GetPlayersCount() > MaxPlayers - Config.reservedSlots)
                     {
-                        if (AdminManager.PlayerHasPermissions(player, Config.adminFlag))
+                        if (!string.IsNullOrEmpty(Config.adminFlag) && AdminManager.PlayerHasPermissions(player, Config.adminFlag))
                         {
                             return HookResult.Continue;
                         }
@@ -57,15 +89,24 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                         {
                             if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
                             {
-                                var kickedPlayer = getPlayerToKick(player);
-                                if (kickedPlayer != null)
+                                switch (Config.kickCheckMethod)
                                 {
-                                    SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 1)", ConsoleColor.Red);
-                                    Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
-                                }
-                                else
-                                {
-                                    SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 1)", ConsoleColor.Red);
+                                    case 1:
+                                        if (!waitingForSelectTeam.Contains(player))
+                                            waitingForSelectTeam.Add(player);
+                                        break;
+                                    default:
+                                        var kickedPlayer = getPlayerToKick(player);
+                                        if (kickedPlayer != null)
+                                        {
+                                            SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 1)", ConsoleColor.Red);
+                                            Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                                        }
+                                        else
+                                        {
+                                            SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 1)", ConsoleColor.Red);
+                                        }
+                                        break;
                                 }
                             }
                         }
@@ -79,24 +120,33 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                 case 2:
                     if (GetPlayersCount() - GetPlayersCountWithReservationFlag() > MaxPlayers - Config.reservedSlots)
                     {
-                        if (AdminManager.PlayerHasPermissions(player, Config.adminFlag))
+                        if (!string.IsNullOrEmpty(Config.adminFlag) && AdminManager.PlayerHasPermissions(player, Config.adminFlag))
                         {
                             return HookResult.Continue;
                         }
                         if (AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
-                            if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
+                            switch (Config.kickCheckMethod)
                             {
-                                var kickedPlayer = getPlayerToKick(player);
-                                if (kickedPlayer != null)
-                                {
-                                    SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 2)", ConsoleColor.Red);
-                                    Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
-                                }
-                                else
-                                {
-                                    SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 2)", ConsoleColor.Red);
-                                }
+                                case 1:
+                                    if (!waitingForSelectTeam.Contains(player))
+                                        waitingForSelectTeam.Add(player);
+                                    break;
+                                default:
+                                    if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
+                                    {
+                                        var kickedPlayer = getPlayerToKick(player);
+                                        if (kickedPlayer != null)
+                                        {
+                                            SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 2)", ConsoleColor.Red);
+                                            Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                                        }
+                                        else
+                                        {
+                                            SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 2)", ConsoleColor.Red);
+                                        }
+                                    }
+                                    break;
                             }
                         }
                         else
@@ -106,35 +156,33 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                         }
                     }
                     break;
-                /*case 3:
-                    if (GetPlayersCount() > MaxPlayers)
-                    {
-                        if (!AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
-                        {
-                            SendConsoleMessage($"[Reserved Slots] Player {player.PlayerName} is kicked because server is full! (Method = 3)", ConsoleColor.Red);
-                            Server.ExecuteCommand($"kickid {player.UserId}");
-                        }
-                    }
-                    break;*/
-
                 default:
                     if (GetPlayersCount() >= MaxPlayers)
                     {
-                        if (AdminManager.PlayerHasPermissions(player, Config.adminFlag))
+                        if (!string.IsNullOrEmpty(Config.adminFlag) && AdminManager.PlayerHasPermissions(player, Config.adminFlag))
                         {
                             return HookResult.Continue;
                         }
                         if (AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
-                            var kickedPlayer = getPlayerToKick(player);
-                            if (kickedPlayer != null)
+                            switch (Config.kickCheckMethod)
                             {
-                                SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 0)", ConsoleColor.Red);
-                                Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
-                            }
-                            else
-                            {
-                                SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 0)", ConsoleColor.Red);
+                                case 1:
+                                    if (!waitingForSelectTeam.Contains(player))
+                                        waitingForSelectTeam.Add(player);
+                                    break;
+                                default:
+                                    var kickedPlayer = getPlayerToKick(player);
+                                    if (kickedPlayer != null)
+                                    {
+                                        SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 0)", ConsoleColor.Red);
+                                        Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                                    }
+                                    else
+                                    {
+                                        SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 0)", ConsoleColor.Red);
+                                    }
+                                    break;
                             }
                         }
                         else
@@ -163,10 +211,14 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                 playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag));
                 break;
             case 2:
-                playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
+                if (!string.IsNullOrEmpty(Config.adminFlag))
+                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
                 break;
             default:
-                playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag) || AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
+                if (!string.IsNullOrEmpty(Config.adminFlag))
+                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag) || AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
+                else
+                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag));
                 break;
         }
 
