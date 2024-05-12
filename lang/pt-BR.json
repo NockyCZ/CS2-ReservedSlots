@@ -1,0 +1,6 @@
+{
+    "Hud.ServerIsFull": "<font class='fontSize-l' color='red'>Você será kickado porque o servidor está cheio!</font>",
+    "Hud.ReservedPlayerJoined": "<font class='fontSize-l' color='red'>Você será kickado porque o jogador com slot reservado se conectou!</font>",
+    "Chat.PlayerWasKicked.ServerIsFull": "O jogador {darkred}{0}{default} foi kickado devido ao slot reservado.",
+    "Chat.PlayerWasKicked.ReservedPlayerJoined": "O jogador {darkred}{0}{default} foi kickado devido ao jogador com slot reservado se conectar."
+}
