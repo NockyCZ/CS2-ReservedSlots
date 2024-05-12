@@ -1,8 +1,9 @@
 ### CS2 Reserved Slots plugin using [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp)
 
-## <img src="https://cdn.discordapp.com/avatars/1195690503094673518/bc09a09dffd31aa168aa60242859ea48.png?size=128" width="30px" height="30px"> [Discord Support Server](https://discord.gg/Tzmq98gwqF)
+### Discord Support Server
+![Discord Banner 2](https://discordapp.com/api/guilds/1149315368465211493/widget.png?style=banner2)
 
-
+## 
 Configuration in
 ```configs/plugins/ReservedSlots/ReservedSlots.json```
 
