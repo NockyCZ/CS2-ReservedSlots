@@ -1,9 +1,11 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Admin;
 using System.Text.Json.Serialization;
+using CounterStrikeSharp.API.Modules.Timers;
+using Microsoft.Extensions.Logging;
 
 namespace ReservedSlots;
 
@@ -15,16 +17,19 @@ public class ReservedSlotsConfig : BasePluginConfig
     [JsonPropertyName("Reserved slots")] public int reservedSlots { get; set; } = 1;
     [JsonPropertyName("Reserved slots method")] public int reservedSlotsMethod { get; set; } = 0;
     [JsonPropertyName("Leave one slot open")] public bool openSlot { get; set; } = false;
+    [JsonPropertyName("Kick Delay")] public int kickDelay { get; set; } = 5;
     [JsonPropertyName("Kick Check Method")] public int kickCheckMethod { get; set; } = 0;
     [JsonPropertyName("Kick type")] public int kickType { get; set; } = 0;
     [JsonPropertyName("Kick players in spectate")] public bool kickPlayersInSpectate { get; set; } = true;
+    [JsonPropertyName("Log kicked players")] public bool logKickedPlayers { get; set; } = true;
+    [JsonPropertyName("Display kicked players message")] public int displayKickedPlayers { get; set; } = 2;
 }
 
 public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 {
     public override string ModuleName => "Reserved Slots";
-    public override string ModuleAuthor => "SourceFactory.eu";
-    public override string ModuleVersion => "1.0.6";
+    public override string ModuleAuthor => "Nocky (SourceFactory.eu)";
+    public override string ModuleVersion => "1.0.7";
 
     public enum KickType
     {
@@ -34,22 +39,48 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
         LowestScore,
         //HighestTime,
     }
-    public List<CCSPlayerController> waitingForSelectTeam = new List<CCSPlayerController>();
-    public ReservedSlotsConfig Config { get; set; } = null!;
+
+    public enum KickReason
+    {
+        ServerIsFull,
+        ReservedPlayerJoined,
+    }
+
+    public List<int> waitingForSelectTeam = new();
+    public Dictionary<CCSPlayerController, KickReason> waitingForKick = new();
+    public ReservedSlotsConfig Config { get; set; } = new();
     public void OnConfigParsed(ReservedSlotsConfig config) { Config = config; }
+
+    public override void Load(bool hotReload)
+    {
+        RegisterListener<Listeners.OnTick>(() =>
+        {
+            if (waitingForKick.Count > 0)
+            {
+                foreach (var item in waitingForKick)
+                {
+                    var player = item.Key;
+                    if (player != null && player.IsValid)
+                    {
+                        var kickMessage = item.Value == KickReason.ServerIsFull ? Localizer["Hud.ServerIsFull"] : Localizer["Hud.ReservedPlayerJoined"];
+                        player.PrintToCenterHtml(kickMessage);
+                    }
+                }
+            }
+        });
+    }
 
     [GameEventHandler(HookMode.Pre)]
     public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (player != null && player.IsValid && waitingForSelectTeam.Contains(player))
+        if (player != null && player.IsValid && waitingForSelectTeam.Contains(player.Slot))
         {
-            waitingForSelectTeam.Remove(player);
+            waitingForSelectTeam.Remove(player.Slot);
             var kickedPlayer = getPlayerToKick(player);
             if (kickedPlayer != null)
             {
-                SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 3)", ConsoleColor.Red);
-                Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                PerformKick(kickedPlayer, KickReason.ReservedPlayerJoined);
             }
             else
             {
@@ -63,16 +94,17 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
     public HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (player != null && player.IsValid && waitingForSelectTeam.Contains(player))
-            waitingForSelectTeam.Remove(player);
+        if (player != null && player.IsValid && waitingForSelectTeam.Contains(player.Slot))
+            waitingForSelectTeam.Remove(player.Slot);
 
         return HookResult.Continue;
     }
-    [GameEventHandler(HookMode.Pre)]
+
+    [GameEventHandler]
     public HookResult OnPlayerConnect(EventPlayerConnectFull @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        int MaxPlayers = Server.MaxPlayers;
+        int MaxPlayers = 0;//Server.MaxPlayers;
         if (player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected && player.SteamID.ToString().Length == 17)
         {
             switch (Config.reservedSlotsMethod)
@@ -92,15 +124,14 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                                 switch (Config.kickCheckMethod)
                                 {
                                     case 1:
-                                        if (!waitingForSelectTeam.Contains(player))
-                                            waitingForSelectTeam.Add(player);
+                                        if (!waitingForSelectTeam.Contains(player.Slot))
+                                            waitingForSelectTeam.Add(player.Slot);
                                         break;
                                     default:
                                         var kickedPlayer = getPlayerToKick(player);
                                         if (kickedPlayer != null)
                                         {
-                                            SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 1)", ConsoleColor.Red);
-                                            Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                                            PerformKick(kickedPlayer, KickReason.ReservedPlayerJoined);
                                         }
                                         else
                                         {
@@ -112,8 +143,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                         }
                         else
                         {
-                            SendConsoleMessage($"[Reserved Slots] Player {player.PlayerName} is kicked because server is full! (Method = 1)", ConsoleColor.Red);
-                            Server.ExecuteCommand($"kickid {player.UserId}");
+                            PerformKick(player, KickReason.ServerIsFull);
                         }
                     }
                     break;
@@ -129,8 +159,8 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                             switch (Config.kickCheckMethod)
                             {
                                 case 1:
-                                    if (!waitingForSelectTeam.Contains(player))
-                                        waitingForSelectTeam.Add(player);
+                                    if (!waitingForSelectTeam.Contains(player.Slot))
+                                        waitingForSelectTeam.Add(player.Slot);
                                     break;
                                 default:
                                     if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
@@ -138,8 +168,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                                         var kickedPlayer = getPlayerToKick(player);
                                         if (kickedPlayer != null)
                                         {
-                                            SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 2)", ConsoleColor.Red);
-                                            Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                                            PerformKick(kickedPlayer, KickReason.ReservedPlayerJoined);
                                         }
                                         else
                                         {
@@ -151,11 +180,11 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                         }
                         else
                         {
-                            SendConsoleMessage($"[Reserved Slots] Player {player.PlayerName} is kicked because server is full! (Method = 2)", ConsoleColor.Red);
-                            Server.ExecuteCommand($"kickid {player.UserId}");
+                            PerformKick(player, KickReason.ServerIsFull);
                         }
                     }
                     break;
+
                 default:
                     if (GetPlayersCount() >= MaxPlayers)
                     {
@@ -168,15 +197,14 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                             switch (Config.kickCheckMethod)
                             {
                                 case 1:
-                                    if (!waitingForSelectTeam.Contains(player))
-                                        waitingForSelectTeam.Add(player);
+                                    if (!waitingForSelectTeam.Contains(player.Slot))
+                                        waitingForSelectTeam.Add(player.Slot);
                                     break;
                                 default:
                                     var kickedPlayer = getPlayerToKick(player);
                                     if (kickedPlayer != null)
                                     {
-                                        SendConsoleMessage(text: $"[Reserved Slots] Player {kickedPlayer.PlayerName} is kicked because VIP player join! (Method = 0)", ConsoleColor.Red);
-                                        Server.ExecuteCommand($"kickid {kickedPlayer.UserId}");
+                                        PerformKick(kickedPlayer, KickReason.ReservedPlayerJoined);
                                     }
                                     else
                                     {
@@ -187,8 +215,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                         }
                         else
                         {
-                            SendConsoleMessage($"[Reserved Slots] Player {player.PlayerName} is kicked because server is full! (Method = 0)", ConsoleColor.Red);
-                            Server.ExecuteCommand($"kickid {player.UserId}");
+                            PerformKick(player, KickReason.ServerIsFull);
                         }
                     }
                     break;
@@ -197,6 +224,72 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 
         return HookResult.Continue;
     }
+
+    public void PerformKick(CCSPlayerController? player, KickReason reason)
+    {
+        if (player == null || !player.IsValid)
+            return;
+
+        var name = player.PlayerName;
+        var steamid = player.SteamID.ToString();
+        if (Config.kickDelay > 1)
+        {
+            waitingForKick.Add(player, reason);
+            AddTimer(Config.kickDelay, () =>
+            {
+                if (player != null && player.IsValid)
+                {
+                    Server.ExecuteCommand($"kickid {player.UserId}");
+                    LogMessage(name, steamid, reason);
+                }
+
+            }, TimerFlags.STOP_ON_MAPCHANGE);
+        }
+        else
+        {
+            Server.ExecuteCommand($"kickid {player.UserId}");
+            LogMessage(name, steamid, reason);
+        }
+    }
+
+    public void LogMessage(string name, string steamid, KickReason reason)
+    {
+        switch (reason)
+        {
+            case KickReason.ServerIsFull:
+                if (Config.logKickedPlayers)
+                    Logger.LogInformation($"Player {name} ({steamid}) was kicked, because the server is full.");
+
+                if (Config.displayKickedPlayers == 1)
+                    Server.PrintToChatAll(Localizer["Chat.PlayerWasKicked.ServerIsFull", name]);
+
+                if (Config.displayKickedPlayers == 2)
+                {
+                    foreach (var admin in Utilities.GetPlayers().Where(p => AdminManager.PlayerHasPermissions(p, "@css/generic")))
+                    {
+                        admin.PrintToChat(Localizer["Chat.PlayerWasKicked.ServerIsFull", name]);
+                    }
+                }
+                break;
+
+            case KickReason.ReservedPlayerJoined:
+                if (Config.logKickedPlayers)
+                    Logger.LogInformation($"Player {name} ({steamid}) was kicked, because player with a reservation slot joined.");
+
+                if (Config.displayKickedPlayers == 1)
+                    Server.PrintToChatAll(Localizer["Chat.PlayerWasKicked.ReservedPlayerJoined", name]);
+
+                if (Config.displayKickedPlayers == 2)
+                {
+                    foreach (var admin in Utilities.GetPlayers().Where(p => AdminManager.PlayerHasPermissions(p, "@css/generic")))
+                    {
+                        admin.PrintToChat(Localizer["Chat.PlayerWasKicked.ReservedPlayerJoined", name]);
+                    }
+                }
+                break;
+        }
+    }
+
     private CCSPlayerController getPlayerToKick(CCSPlayerController client)
     {
         var allPlayers = Utilities.GetPlayers();
@@ -262,7 +355,6 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
         }
         return player;
     }
-
     private static int GetPlayersCount()
     {
         return Utilities.GetPlayers().Where(p => p.IsValid && !p.IsHLTV && !p.IsBot && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17).Count();
