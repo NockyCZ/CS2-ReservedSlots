@@ -29,7 +29,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 {
     public override string ModuleName => "Reserved Slots";
     public override string ModuleAuthor => "Nocky (SourceFactory.eu)";
-    public override string ModuleVersion => "1.0.7";
+    public override string ModuleVersion => "1.0.8";
 
     public enum KickType
     {
@@ -47,9 +47,14 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
     }
 
     public List<int> waitingForSelectTeam = new();
-    public Dictionary<CCSPlayerController, KickReason> waitingForKick = new();
+    public Dictionary<int, KickReason> waitingForKick = new();
     public ReservedSlotsConfig Config { get; set; } = new();
-    public void OnConfigParsed(ReservedSlotsConfig config) { Config = config; }
+    public void OnConfigParsed(ReservedSlotsConfig config)
+    {
+        Config = config;
+        if (string.IsNullOrEmpty(Config.reservedFlag))
+            SendConsoleMessage("[Reserved Slots] Flag for reserved slots cannot be empty!", ConsoleColor.Red);
+    }
 
     public override void Load(bool hotReload)
     {
@@ -59,7 +64,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
             {
                 foreach (var item in waitingForKick)
                 {
-                    var player = item.Key;
+                    var player = Utilities.GetPlayerFromSlot(item.Key);
                     if (player != null && player.IsValid)
                     {
                         var kickMessage = item.Value == KickReason.ServerIsFull ? Localizer["Hud.ServerIsFull"] : Localizer["Hud.ReservedPlayerJoined"];
@@ -84,7 +89,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
             }
             else
             {
-                SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 3)", ConsoleColor.Red);
+                SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked!", ConsoleColor.Red);
             }
         }
         return HookResult.Continue;
@@ -94,8 +99,14 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
     public HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (player != null && player.IsValid && waitingForSelectTeam.Contains(player.Slot))
-            waitingForSelectTeam.Remove(player.Slot);
+        if (player != null && player.IsValid)
+        {
+            if (waitingForSelectTeam.Contains(player.Slot))
+                waitingForSelectTeam.Remove(player.Slot);
+
+            if (waitingForKick.ContainsKey(player.Slot))
+                waitingForKick.Remove(player.Slot);
+        }
 
         return HookResult.Continue;
     }
@@ -104,7 +115,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
     public HookResult OnPlayerConnect(EventPlayerConnectFull @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        int MaxPlayers = 0;//Server.MaxPlayers;
+        int MaxPlayers = Server.MaxPlayers;
         if (player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected && player.SteamID.ToString().Length == 17)
         {
             switch (Config.reservedSlotsMethod)
@@ -156,15 +167,15 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                         }
                         if (AdminManager.PlayerHasPermissions(player, Config.reservedFlag))
                         {
-                            switch (Config.kickCheckMethod)
+                            if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
                             {
-                                case 1:
-                                    if (!waitingForSelectTeam.Contains(player.Slot))
-                                        waitingForSelectTeam.Add(player.Slot);
-                                    break;
-                                default:
-                                    if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
-                                    {
+                                switch (Config.kickCheckMethod)
+                                {
+                                    case 1:
+                                        if (!waitingForSelectTeam.Contains(player.Slot))
+                                            waitingForSelectTeam.Add(player.Slot);
+                                        break;
+                                    default:
                                         var kickedPlayer = getPlayerToKick(player);
                                         if (kickedPlayer != null)
                                         {
@@ -174,8 +185,8 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                                         {
                                             SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked! (Method = 2)", ConsoleColor.Red);
                                         }
-                                    }
-                                    break;
+                                        break;
+                                }
                             }
                         }
                         else
@@ -230,18 +241,23 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
         if (player == null || !player.IsValid)
             return;
 
+        var slot = player.Slot;
         var name = player.PlayerName;
         var steamid = player.SteamID.ToString();
         if (Config.kickDelay > 1)
         {
-            waitingForKick.Add(player, reason);
+            waitingForKick.Add(slot, reason);
             AddTimer(Config.kickDelay, () =>
             {
+                player = Utilities.GetPlayerFromSlot(slot);
                 if (player != null && player.IsValid)
                 {
                     Server.ExecuteCommand($"kickid {player.UserId}");
                     LogMessage(name, steamid, reason);
                 }
+
+                if (waitingForKick.ContainsKey(slot))
+                    waitingForKick.Remove(slot);
 
             }, TimerFlags.STOP_ON_MAPCHANGE);
         }
@@ -262,8 +278,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 
                 if (Config.displayKickedPlayers == 1)
                     Server.PrintToChatAll(Localizer["Chat.PlayerWasKicked.ServerIsFull", name]);
-
-                if (Config.displayKickedPlayers == 2)
+                else if (Config.displayKickedPlayers == 2)
                 {
                     foreach (var admin in Utilities.GetPlayers().Where(p => AdminManager.PlayerHasPermissions(p, "@css/generic")))
                     {
@@ -278,8 +293,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
 
                 if (Config.displayKickedPlayers == 1)
                     Server.PrintToChatAll(Localizer["Chat.PlayerWasKicked.ReservedPlayerJoined", name]);
-
-                if (Config.displayKickedPlayers == 2)
+                else if (Config.displayKickedPlayers == 2)
                 {
                     foreach (var admin in Utilities.GetPlayers().Where(p => AdminManager.PlayerHasPermissions(p, "@css/generic")))
                     {
@@ -294,31 +308,31 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
     {
         var allPlayers = Utilities.GetPlayers();
         var playersList = allPlayers
-            .Where(p => p.IsValid && !p.IsHLTV && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17 && p != client)
-            .Select(player => (player, (int)player.Ping, player.Score))
+            .Where(p => !p.IsBot && !p.IsHLTV && p.PlayerPawn.IsValid && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17 && p != client)
+            .Select(player => (player, (int)player.Ping, player.Score, player.Team))
             .ToList();
 
         switch (Config.kickImmunity)
         {
             case 1:
-                playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag));
+                playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.player, Config.reservedFlag));
                 break;
             case 2:
                 if (!string.IsNullOrEmpty(Config.adminFlag))
-                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
+                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.player, Config.adminFlag));
                 break;
             default:
                 if (!string.IsNullOrEmpty(Config.adminFlag))
-                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag) || AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
+                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.player, Config.reservedFlag) || AdminManager.PlayerHasPermissions(p.Item1, Config.adminFlag));
                 else
-                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.Item1, Config.reservedFlag));
+                    playersList.RemoveAll(p => AdminManager.PlayerHasPermissions(p.player, Config.reservedFlag));
                 break;
         }
 
         if (Config.kickPlayersInSpectate)
         {
-            if (Utilities.GetPlayers().Where(p => p.IsValid && !p.IsHLTV && p != client && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17 && (p.TeamNum == (byte)CsTeam.None || p.TeamNum == (byte)CsTeam.Spectator)).Count() > 0)
-                playersList.RemoveAll(p => p.Item1.TeamNum != (byte)CsTeam.None || p.Item1.TeamNum != (byte)CsTeam.Spectator);
+            if (playersList.Count(x => x.Team == CsTeam.None || x.Team == CsTeam.Spectator) > 0)
+                playersList.RemoveAll(x => x.Team != CsTeam.None || x.Team != CsTeam.Spectator);
         }
 
         CCSPlayerController player = null!;
@@ -327,41 +341,44 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
             case (int)KickType.HighestPing:
                 if (playersList.Count() > 0)
                 {
-                    playersList.Sort((x, y) => y.Item2.CompareTo(x.Item2));
-                    player = playersList.FirstOrDefault().Item1;
+                    playersList.Sort((x, y) => y.player.Ping.CompareTo(x.player.Ping));
+                    player = playersList.FirstOrDefault().player;
                 }
                 break;
 
             case (int)KickType.HighestScore:
                 if (playersList.Count() > 0)
                 {
-                    playersList.Sort((x, y) => y.Item3.CompareTo(x.Item3));
-                    player = playersList.FirstOrDefault().Item1;
+                    playersList.Sort((x, y) => y.player.Score.CompareTo(x.player.Score));
+                    player = playersList.FirstOrDefault().player;
                 }
                 break;
 
             case (int)KickType.LowestScore:
                 if (playersList.Count() > 0)
                 {
-                    playersList.Sort((x, y) => x.Item3.CompareTo(y.Item3));
-                    player = playersList.FirstOrDefault().Item1;
+                    playersList.Sort((x, y) => x.player.Score.CompareTo(y.player.Score));
+                    player = playersList.FirstOrDefault().player;
                 }
                 break;
 
             default:
-                playersList = playersList.OrderBy(x => Guid.NewGuid()).ToList();
-                player = playersList.FirstOrDefault().Item1;
+                if (playersList.Count() > 0)
+                {
+                    playersList = playersList.OrderBy(x => Guid.NewGuid()).ToList();
+                    player = playersList.FirstOrDefault().player;
+                }
                 break;
         }
         return player;
     }
     private static int GetPlayersCount()
     {
-        return Utilities.GetPlayers().Where(p => p.IsValid && !p.IsHLTV && !p.IsBot && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17).Count();
+        return Utilities.GetPlayers().Where(p => !p.IsHLTV && !p.IsBot && p.PlayerPawn.IsValid && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17).Count();
     }
     private int GetPlayersCountWithReservationFlag()
     {
-        return Utilities.GetPlayers().Where(p => p.IsValid && !p.IsHLTV && !p.IsBot && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17 && AdminManager.PlayerHasPermissions(p, Config.reservedFlag)).Count();
+        return Utilities.GetPlayers().Where(p => !p.IsHLTV && !p.IsBot && p.PlayerPawn.IsValid && p.Connected == PlayerConnectedState.PlayerConnected && p.SteamID.ToString().Length == 17 && AdminManager.PlayerHasPermissions(p, Config.reservedFlag)).Count();
     }
     private static void SendConsoleMessage(string text, ConsoleColor color)
     {
