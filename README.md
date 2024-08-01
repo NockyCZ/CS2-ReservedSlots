@@ -21,6 +21,7 @@ Configuration in
 ||`1` - Maintains the number of available slots according to the reservation slots setting, allowing only players with a Reservation flag to join. For example, if you have maxplayers set to 10 and Reserved slots set to 3, when there are 7/10 players on the server, additional players can only join if they have a Reservation flag. If they don't, they will be kicked. If the server is already full and a player with a Reservation flag attempts to join, it will kick a player based on the Kick type |
 ||`2` - It works the same way as in method 2, except players with a Reservation flag are not counted towards the total player count. For example, if there are 7/10 players on the server, and Reserved slots are set to 3. Out of those 7 players, two players have a Reservation flag. The plugin will then consider that there are 5 players on the server, allowing two more players without a Reservation flag to connect. If the server is already full and a player with a Reservation flag attempts to join, it will kick a player based on the  Kick type |
 | `Leave one slot open` | Works only if reserved slots method is set to 1 or 2. If set to `true`, there will always be one slot open. (`true` or `false`) |
+| `Kick Delay` | Only players with an Admin reserved flag|
 | `Kick Check Method`  | When a player will be selected for kick when a player with a Reserved flag joins?? |
 ||`0` - When a player with a Reserved flag joins |
 ||`1` - When a player with a Reserved flag choose a team|
@@ -30,6 +31,11 @@ Configuration in
 ||`2` -  Players will be kicked by highest score|
 ||`3` -  Players will be kicked by lowest score|
 | `Kick players in spectate` | Kick players who are in spectate first? (`true` or `false`) |
+| `Log kicked players` | (`true` or `false`) |
+| `Display kicked players message` | Who will see the message when a player is kicked due to a reserved slot |
+||`0` - None |
+||`1` - All players|
+||`2` - Only Admins with the `@css/generic` flag|
 
 ### Installation
 1. Download the lastest release https://github.com/NockyCZ/CS2-ReservedSlots/releases/latest
