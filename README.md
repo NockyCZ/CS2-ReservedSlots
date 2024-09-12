@@ -1,4 +1,11 @@
-### CS2 Reserved Slots plugin using [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp)
+<p align="center">
+<b>Reseved Slots</b> is a CS2 plugin that is used to reserve slots for VIP players.<br>
+Designed for <a href="https://github.com/roflmuffin/CounterStrikeSharp">CounterStrikeSharp</a> framework<br>
+<br>
+<a href="https://buymeacoffee.com/sourcefactory">
+<img src="https://img.buymeacoffee.com/button-api/?text=Support Me&emoji=🚀&slug=sourcefactory&button_colour=e6005c&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" />
+</a>
+</p>
 
 ### Discord Support Server
 [<img src="https://discordapp.com/api/guilds/1149315368465211493/widget.png?style=banner2">](https://discord.gg/Tzmq98gwqF)
