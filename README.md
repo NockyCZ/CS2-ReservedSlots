@@ -1,5 +1,5 @@
 <p align="center">
-<b>Reseved Slots</b> is a CS2 plugin that is used to reserve slots for VIP players.<br>
+<b>Reseved Slots</b> is a CS2 plugin that is used to reserve slots for VIP players or Admins.<br>
 Designed for <a href="https://github.com/roflmuffin/CounterStrikeSharp">CounterStrikeSharp</a> framework<br>
 <br>
 <a href="https://buymeacoffee.com/sourcefactory">
