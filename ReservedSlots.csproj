@@ -7,7 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CounterStrikeSharp.API" Version="1.0.233" />
+    <PackageReference Include="CounterStrikeSharp.API" Version="1.0.263" />
+    <ProjectReference Include="..\Discord Utilities\src\DiscordUtilitiesAPI\DiscordUtilitiesAPI.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>
