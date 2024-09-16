@@ -13,7 +13,7 @@ Designed for <a href="https://github.com/roflmuffin/CounterStrikeSharp">CounterS
 ### Installation
 1. Download the lastest release https://github.com/NockyCZ/CS2-ReservedSlots/releases/latest
    - `ReservedSlots.zip` file is a version that does not support Discord Utilities
-   - `ReservedSlots (DU Support).zip` file is a version that supports Discord Utilities (You can combine flags and discord roles)
+   - `ReservedSlots_DU_Support.zip` file is a version that supports Discord Utilities (You can combine flags and discord roles)
 3. Unzip into your servers `csgo/addons/counterstrikesharp/plugins/` dir
 4. Restart the server
 
