@@ -12,21 +12,32 @@ Designed for <a href="https://github.com/roflmuffin/CounterStrikeSharp">CounterS
 
 ### Installation
 1. Download the lastest release https://github.com/NockyCZ/CS2-ReservedSlots/releases/latest
-2. Unzip into your servers `csgo/addons/counterstrikesharp/plugins/` dir
+   - `ReservedSlots.zip` file is a version that does not support Discord Utilities
+   - `ReservedSlots (DU Support).zip` file is a version that supports Discord Utilities (You can combine flags and discord roles)
+3. Unzip into your servers `csgo/addons/counterstrikesharp/plugins/` dir
+4. Restart the server
 
 ### Dependencies
-- [CS2 Discord Utilities](https://github.com/NockyCZ/CS2-Discord-Utilities) (Only if you want to use Discord Roles in `Reserved Flags and Roles` or `Admin Flags and Roles`)
+- [CS2 Discord Utilities](https://github.com/NockyCZ/CS2-Discord-Utilities) (Only if you want to use a version thats supports Discord Utilities)
 
-## 
-Configuration in
+## Configuration
 ```configs/plugins/ReservedSlots/ReservedSlots.json```
+
+||| What it does |
+| ------------- | ------------- | ------------- |
+| **Reserved Slots**| Plugin version that does not support Discord Utilities | |
+|| `Reserved Flags` | **• List of Flags for reserved slot**<br>- Cannot be empty! <br>- Can be used multiple flags ||
+|| `Reserved Admin Flags` | **• List of Flags for admin reserved slot** <br>- When a player with an Admin reserved slot joins, no one is kicked<br>- Can be empty!<br>- Can be used multiple flags||
+||||
+| **Reserved Slots (With Discord Utilities Support)** | Plugin version that supports Discord Utilities | |
+|| `Reserved Flags and Roles` | **• List of Flags or Discord Roles for reserved slot**<br>- You can combine roles and flags (If a player does not have a role, his flags will be checked)<br>- Cannot be empty! <br>- Can be used multiple flags and roles<br>-  ||
+|| `Reserved Admin Flags and Roles` | **• List of Flags or Discord Roles for admin reserved slot**<br>- When a player with an Admin reserved slot joins, no one is kicked<br>- You can combine roles and flags (If a player does not have a role, his flags will be checked)<br>- Can be empty!<br>- Can be used multiple flags||
+#
+<br>
 
 |   | What it does |
 | ------------- | ------------- |
-| `Reserved Flags and Roles`  | List of Flags or Discord Roles for reserved slot |
-| `Reserved Admin Flags and Roles`  | List of Flags or Discord Roles for admin reserved slot. (When a player with an Admin reserved slot joins, no one is kicked (Leave empty for disable this option))|
-| `Use Discord Utilities`  | Use the [Discord Utilities](https://github.com/NockyCZ/CS2-Discord-Utilities) plugin to detect player discord roles in **Reserved Flags and Roles** or  **Reserved Admin Flags and Roles** (Works only on linked players) (`true` or `false`) |
-| `Reserved Slots` | How many slots will be reserved if the reserved slots method is 1 or 2 |
+| `Reserved Slots`| How many slots will be reserved if the reserved slots method is 1 or 2 |
 | `Reserved Slots Method` | `0` - There will always be one slot open. For example, if your maxplayers is set to 10, the server can have a maximum of 9 players. If a 10th player joins with a Reservation flag/role, it will kick a player based on the Kick type. If the 10th player doesn't have a reservation flag/role, they will be kicked |
 ||`1` - Maintains the number of available slots according to the reservation slots setting, allowing only players with a Reservation flag/role to join. For example, if you have maxplayers set to 10 and Reserved slots set to 3, when there are 7/10 players on the server, additional players can only join if they have a Reservation flag/role. If they don't, they will be kicked. If the server is already full and a player with a Reservation flag/role attempts to join, it will kick a player based on the Kick type |
 ||`2` - It works the same way as in method 2, except players with a Reservation flag/role are not counted towards the total player count. For example, if there are 7/10 players on the server, and Reserved slots are set to 3. Out of those 7 players, two players have a Reservation flag/role. The plugin will then consider that there are 5 players on the server, allowing two more players without a Reservation flag/role to connect. If the server is already full and a player with a Reservation flag/role attempts to join, it will kick a player based on the  Kick type |
