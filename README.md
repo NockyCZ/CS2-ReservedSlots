@@ -26,12 +26,12 @@ Designed for <a href="https://github.com/roflmuffin/CounterStrikeSharp">CounterS
 ||| What it does |
 | ------------- | ------------- | ------------- |
 | **Reserved Slots**| Plugin version that does not support Discord Utilities | |
-|| `Reserved Flags` | **• List of Flags for reserved slot**<br>- Cannot be empty! <br>- Can be used multiple flags ||
-|| `Reserved Admin Flags` | **• List of Flags for admin reserved slot** <br>- When a player with an Admin reserved slot joins, no one is kicked<br>- Can be empty!<br>- Can be used multiple flags||
+|| `Reserved Flags` | **• List of Flags for reserved slot**<br>- Cannot be empty! ||
+|| `Reserved Admin Flags` | **• List of Flags for admin reserved slot** <br>- When a player with an Admin reserved slot joins, no one is kicked<br>- Can be empty||
 ||||
 | **Reserved Slots (With Discord Utilities Support)** | Plugin version that supports Discord Utilities | |
-|| `Reserved Flags and Roles` | **• List of Flags or Discord Roles for reserved slot**<br>- You can combine roles and flags (If a player does not have a role, his flags will be checked)<br>- Cannot be empty! <br>- Can be used multiple flags and roles<br>-  ||
-|| `Reserved Admin Flags and Roles` | **• List of Flags or Discord Roles for admin reserved slot**<br>- When a player with an Admin reserved slot joins, no one is kicked<br>- You can combine roles and flags (If a player does not have a role, his flags will be checked)<br>- Can be empty!<br>- Can be used multiple flags||
+|| `Reserved Flags and Roles` | **• List of Flags and Discord Roles for reserved slot**<br>- You can combine roles and flags (If a player does not have a role, his flags will be checked)<br>- Cannot be empty!  ||
+|| `Reserved Admin Flags and Roles` | **• List of Flags and Discord Roles for admin reserved slot**<br>- When a player with an Admin reserved slot joins, no one is kicked<br>- You can combine roles and flags (If a player does not have a role, his flags will be checked)<br>- Can be empty!||
 #
 <br>
 
