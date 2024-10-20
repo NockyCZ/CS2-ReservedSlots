@@ -152,54 +152,44 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                 return HookResult.Continue;
 
             int MaxPlayers = Server.MaxPlayers;
+            var playerReservedType = GetPlayersReservedType(player);
+            if (playerReservedType == ReservedType.VIP || playerReservedType == ReservedType.Admin)
+                SetKickImmunity(player, playerReservedType);
+
             switch (Config.reservedSlotsMethod)
             {
                 case 1:
                     if (GetPlayersCount() > MaxPlayers - Config.reservedSlots)
                     {
-                        var playerReservedType = GetPlayersReservedType(player);
                         if (playerReservedType == ReservedType.VIP)
                         {
                             if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
                                 PerformKickCheckMethod(player);
-                            SetKickImmunity(player, playerReservedType);
                         }
                         else if (playerReservedType == ReservedType.None)
                             PerformKick(player, KickReason.ServerIsFull);
-                        else
-                            SetKickImmunity(player, playerReservedType);
                     }
                     break;
                 case 2:
                     if (GetPlayersCount() - GetPlayersCountWithReservationFlag() > MaxPlayers - Config.reservedSlots)
                     {
-                        var playerReservedType = GetPlayersReservedType(player);
                         if (playerReservedType == ReservedType.VIP)
                         {
                             if ((Config.openSlot && GetPlayersCount() >= MaxPlayers) || !Config.openSlot && GetPlayersCount() > MaxPlayers)
                                 PerformKickCheckMethod(player);
-                            SetKickImmunity(player, playerReservedType);
                         }
                         else if (playerReservedType == ReservedType.None)
                             PerformKick(player, KickReason.ServerIsFull);
-                        else
-                            SetKickImmunity(player, playerReservedType);
                     }
                     break;
 
                 default:
                     if (GetPlayersCount() >= MaxPlayers)
                     {
-                        var playerReservedType = GetPlayersReservedType(player);
                         if (playerReservedType == ReservedType.VIP)
-                        {
                             PerformKickCheckMethod(player);
-                            SetKickImmunity(player, playerReservedType);
-                        }
                         else if (playerReservedType == ReservedType.None)
                             PerformKick(player, KickReason.ServerIsFull);
-                        else
-                            SetKickImmunity(player, playerReservedType);
                     }
                     break;
             }
