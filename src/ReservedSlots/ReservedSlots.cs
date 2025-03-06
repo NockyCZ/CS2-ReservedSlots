@@ -129,14 +129,14 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
         var player = @event.Userid;
         if (player != null && player.IsValid && player.SteamID.ToString().Length == 17)
         {
-            if (Config.adminFlags.Count == 0 && Config.adminFlags.Count == 0)
+            if (Config.adminFlags.Count == 0 && Config.reservedFlags.Count == 0)
                 return HookResult.Continue;
 
             int MaxPlayers = Server.MaxPlayers;
             var playerReservedType = GetPlayersReservedType(player);
             if (playerReservedType == ReservedType.VIP || playerReservedType == ReservedType.Admin)
                 SetKickImmunity(player, playerReservedType);
-                
+
             switch (Config.reservedSlotsMethod)
             {
                 case 1:
