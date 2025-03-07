@@ -16,3 +16,5 @@
 *.nupkg
 *.snupkg
 
+# Visual Studio files
+.vs

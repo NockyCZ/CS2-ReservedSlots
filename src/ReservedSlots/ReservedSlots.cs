@@ -241,7 +241,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                 }
                 else
                 {
-                    SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked!", ConsoleColor.Red);
+                    Logger.LogWarning($"[Reserved Slots] Selected player is NULL, no one is kicked!");
                 }
                 break;
         }
@@ -328,7 +328,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
         if (Config.kickPlayersInSpectate)
         {
             if (playersList.Count(x => x.Team == CsTeam.None || x.Team == CsTeam.Spectator) > 0)
-                playersList.RemoveAll(x => x.Team != CsTeam.None || x.Team != CsTeam.Spectator);
+                playersList.RemoveAll(x => x.Team != CsTeam.None && x.Team != CsTeam.Spectator);
         }
 
         if (!playersList.Any())
