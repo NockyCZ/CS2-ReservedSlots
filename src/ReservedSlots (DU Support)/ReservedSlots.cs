@@ -148,7 +148,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
         var player = @event.Userid;
         if (player != null && player.IsValid && player.SteamID.ToString().Length == 17)
         {
-            if (Config.adminFlagsAndRoles.Count == 0 && Config.adminFlagsAndRoles.Count == 0)
+            if (Config.adminFlagsAndRoles.Count == 0 && Config.reservedFlagsAndRoles.Count == 0)
                 return HookResult.Continue;
 
             int MaxPlayers = Server.MaxPlayers;
@@ -293,7 +293,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
                 }
                 else
                 {
-                    SendConsoleMessage(text: $"[Reserved Slots] Selected player is NULL, no one is kicked!", ConsoleColor.Red);
+                    Logger.LogError($"[Reserved Slots] Selected player is NULL, no one is kicked!");
                 }
                 break;
         }
@@ -380,7 +380,7 @@ public class ReservedSlots : BasePlugin, IPluginConfig<ReservedSlotsConfig>
         if (Config.kickPlayersInSpectate)
         {
             if (playersList.Count(x => x.Team == CsTeam.None || x.Team == CsTeam.Spectator) > 0)
-                playersList.RemoveAll(x => x.Team != CsTeam.None || x.Team != CsTeam.Spectator);
+                playersList.RemoveAll(x => x.Team != CsTeam.None && x.Team != CsTeam.Spectator);
         }
 
         if (!playersList.Any())
