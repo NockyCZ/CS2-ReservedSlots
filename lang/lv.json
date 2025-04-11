@@ -1,0 +1,6 @@
+{
+    "Hud.ServerIsFull": "<font class='fontSize-l' color='red'>Tu tiksi kickots, jo serveris ir pilns!</font>",
+    "Hud.ReservedPlayerJoined": "<font class='fontSize-l' color='red'>Tu tiksi kickots, jo spēlētājs ar slota rezervāciju pievienojās!</font>",
+    "Chat.PlayerWasKicked.ServerIsFull": "Spēlētājs {darkred}{0}{default} tika kickots, jo viņam nav slota rezervācija.",
+    "Chat.PlayerWasKicked.ReservedPlayerJoined": "Spēlētājs {darkred}{0}{default} tika izmests, jo spēlētajs ar slota rezervāciju pievienojās."
+}
