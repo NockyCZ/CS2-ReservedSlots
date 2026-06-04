@@ -2,13 +2,7 @@
 <b>Reseved Slots</b> is a CS2 plugin that is used to reserve slots for VIP players or Admins.<br>
 Designed for <a href="https://github.com/roflmuffin/CounterStrikeSharp">CounterStrikeSharp</a> framework<br>
 <br>
-<a href="https://buymeacoffee.com/sourcefactory">
-<img src="https://img.buymeacoffee.com/button-api/?text=Support Me&emoji=🚀&slug=sourcefactory&button_colour=e6005c&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" />
-</a>
-</p>
 
-### Discord Support Server
-[<img src="https://discordapp.com/api/guilds/1149315368465211493/widget.png?style=banner2">](https://discord.gg/Tzmq98gwqF)
 
 ### Installation
 1. Download the lastest release https://github.com/NockyCZ/CS2-ReservedSlots/releases/latest
@@ -16,9 +10,6 @@ Designed for <a href="https://github.com/roflmuffin/CounterStrikeSharp">CounterS
    - `ReservedSlots_DU_Support.zip` file is a version that supports Discord Utilities (You can combine flags and discord roles)
 3. Unzip into your servers `csgo/addons/counterstrikesharp/plugins/` dir
 4. Restart the server
-
-### Dependencies
-- [CS2 Discord Utilities](https://github.com/NockyCZ/CS2-Discord-Utilities) (Only if you want to use a version thats supports Discord Utilities)
 
 ## Configuration
 ```configs/plugins/ReservedSlots/ReservedSlots.json```
